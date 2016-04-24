@@ -2,9 +2,9 @@ var watson = require('watson-developer-cloud');
 var fs = require('fs');
 
 // Initialize the Visual Recognition API
-var visual_recognition = determineVisualRecoginitionApi();
+var visual_recognition = determineVisualRecognitionApi();
 
-function determineVisualRecoginitionApi()
+function determineVisualRecognitionApi()
 {
   var settingsFile = fs.readFileSync('settings.json', 'utf8');
   var settings = JSON.parse(settingsFile);
@@ -49,10 +49,14 @@ function processXrayTypeClassificationResponse(response) {
 
 function processXrayAllTypeClassificationScore(allTypeScore) {
   if (allTypeScore === undefined) {
-    procesUnknownXrayType();
+    processUnknownXrayType();
   } else {
     processAllKnownXrayTypeScore(allTypeScore);
   }
+}
+
+function processUnknownXrayType() {
+  console.log("This is not a knee nor lungs.");
 }
 
 function processAllKnownXrayTypeScore(allTypeScore) {
@@ -74,15 +78,15 @@ var typeClassifierToAllQualityClassifierIdMap = {
 };
 
 function classifyQualityOfXrayWithKnownTypeName(typeName) {
-  var allQualityClassifiactionParameter = {
+  var allQualityClassificationParameter = {
     images_file: openImageFileStream(),
     classifier_ids: typeClassifierToAllQualityClassifierIdMap[typeName]
   };
 
-  cllassifyQualityOfXray(allQualityClassifiactionParameter);
+  classifyQualityOfXray(allQualityClassificationParameter);
 }
 
-function cllassifyQualityOfXray (parameters) {
+function classifyQualityOfXray (parameters) {
   visual_recognition.classify(parameters, xrayQualityClassifiactionCallback);
 }
 
@@ -121,8 +125,4 @@ function processAllHighQualityScore(allQualityScore) {
   var qualityScore = allQualityScore[0]['score'];
 
   console.log("This is a good image with probability of " + qualityScore);
-}
-
-function procesUnknownXrayType() {
-  console.log("This is not a knee nor lungs.");
 }
