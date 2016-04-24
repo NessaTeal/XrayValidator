@@ -1,37 +1,38 @@
 var watson = require('watson-developer-cloud');
 var fs = require('fs');
 
-var visual_recognition = null;
+var visualRecognitionApi = determineVisualRecognitionApi();
 
-initializeVisualRecognitionApi();
+// Run the script
+classifyTypeOfXrayImage();
 
-function initializeVisualRecognitionApi() {
-  visual_recognition = determineVisualRecognitionApi()
-}
-
+// Define the functions
 function determineVisualRecognitionApi() {
   var settingsFile = fs.readFileSync('settings.json', 'utf8');
   var settings = JSON.parse(settingsFile);
   return watson.visual_recognition(settings);
 }
 
-// Save the XrayTypeClassifiers
-var xrayTypeClassifiers = ["ChestFront_20730281", "KneeFront_1424148053"];
+function classifyTypeOfXrayImage() {
+  var xrayTypeClassificationParameter = determineXrayTypeClassificationParameter();
+  visualRecognitionApi.classify(xrayTypeClassificationParameter, xrayImageTypeClassificationCallback);
+}
 
-// Setup the classification parameters
-var allTypeClassificationParameter = {
-  images_file: openImageFileStream(),
-  classifier_ids: xrayTypeClassifiers
-};
+function determineXrayTypeClassificationParameter() {
+  var allXrayImageTypeClassifierId = ["ChestFront_20730281", "KneeFront_1424148053"];
+
+  return {
+    images_file: openImageFileStream(),
+    classifier_ids: allXrayImageTypeClassifierId
+  };
+}
 
 function openImageFileStream() {
   var pathToImage = process.argv[2];
   return fs.createReadStream(pathToImage);
 }
 
-visual_recognition.classify(allTypeClassificationParameter, xrayTypeClassificationCallback);
-  
-function xrayTypeClassificationCallback (error, response) {
+function xrayImageTypeClassificationCallback(error, response) {
   if (error) {
     processXrayTypeClassificationError(error);
   } else {
@@ -75,22 +76,29 @@ function processKnownXrayTypeScore(typeName, typeScore) {
   classifyQualityOfXrayWithKnownTypeName(typeName);
 }
 
-var typeClassifierToAllQualityClassifierIdMap = {
-  "KneeFront": ["GoodKneeFront_338893760"],
-  "ChestFront": ["GoodChestFront_1810506107"]
-};
-
 function classifyQualityOfXrayWithKnownTypeName(typeName) {
-  var allQualityClassificationParameter = {
-    images_file: openImageFileStream(),
-    classifier_ids: typeClassifierToAllQualityClassifierIdMap[typeName]
-  };
+  var qualityClassificationParameter = buildQualityClassificationParameter(typeName);
+  classifyQualityOfXray(qualityClassificationParameter);
+}
 
-  classifyQualityOfXray(allQualityClassificationParameter);
+function buildQualityClassificationParameter(imageTypeName) {
+  var typeClassifierToAllQualityClassifierIdMap = determineTypeClassifierToAllQualityClassifierMap();
+
+  return {
+    images_file: openImageFileStream(),
+    classifier_ids: typeClassifierToAllQualityClassifierIdMap[imageTypeName]
+  };
+}
+
+function determineTypeClassifierToAllQualityClassifierMap() {
+  return {
+    "KneeFront": ["GoodKneeFront_338893760"],
+    "ChestFront": ["GoodChestFront_1810506107"]
+  };
 }
 
 function classifyQualityOfXray (parameters) {
-  visual_recognition.classify(parameters, xrayQualityClassificationCallback);
+  visualRecognitionApi.classify(parameters, xrayQualityClassificationCallback);
 }
 
 function xrayQualityClassificationCallback(error, response) {
