@@ -1,11 +1,15 @@
 var watson = require('watson-developer-cloud');
 var fs = require('fs');
 
-// Initialize the Visual Recognition API
-var visual_recognition = determineVisualRecognitionApi();
+var visual_recognition = null;
 
-function determineVisualRecognitionApi()
-{
+initializeVisualRecognitionApi();
+
+function initializeVisualRecognitionApi() {
+  visual_recognition = determineVisualRecognitionApi()
+}
+
+function determineVisualRecognitionApi() {
   var settingsFile = fs.readFileSync('settings.json', 'utf8');
   var settings = JSON.parse(settingsFile);
   return watson.visual_recognition(settings);
@@ -16,12 +20,11 @@ var xrayTypeClassifiers = ["ChestFront_20730281", "KneeFront_1424148053"];
 
 // Setup the classification parameters
 var allTypeClassificationParameter = {
-	images_file: openImageFileStream(),
-	classifier_ids: xrayTypeClassifiers
+  images_file: openImageFileStream(),
+  classifier_ids: xrayTypeClassifiers
 };
 
-function openImageFileStream()
-{
+function openImageFileStream() {
   var pathToImage = process.argv[2];
   return fs.createReadStream(pathToImage);
 }
@@ -29,22 +32,22 @@ function openImageFileStream()
 visual_recognition.classify(allTypeClassificationParameter, xrayTypeClassificationCallback);
   
 function xrayTypeClassificationCallback (error, response) {
-	if (error) {
-		processXrayTypeClassificationError(error);
-	} else {
-		processXrayTypeClassificationResponse(response);
-	}
+  if (error) {
+    processXrayTypeClassificationError(error);
+  } else {
+    processXrayTypeClassificationResponse(response);
+  }
 }
 
 function processXrayTypeClassificationError(error) {
-	console.log(error);
+  console.log(error);
 }
 
 function processXrayTypeClassificationResponse(response) {
-	var allImageAllTypeResponse = response['images'];
-	var allTypeScore = allImageAllTypeResponse[0]['scores'];
+  var allImageAllTypeResponse = response['images'];
+  var allTypeScore = allImageAllTypeResponse[0]['scores'];
 
-	processXrayAllTypeClassificationScore(allTypeScore);
+  processXrayAllTypeClassificationScore(allTypeScore);
 }
 
 function processXrayAllTypeClassificationScore(allTypeScore) {
@@ -87,10 +90,10 @@ function classifyQualityOfXrayWithKnownTypeName(typeName) {
 }
 
 function classifyQualityOfXray (parameters) {
-  visual_recognition.classify(parameters, xrayQualityClassifiactionCallback);
+  visual_recognition.classify(parameters, xrayQualityClassificationCallback);
 }
 
-function xrayQualityClassifiactionCallback(error, response) {
+function xrayQualityClassificationCallback(error, response) {
   if (error) {
     processXrayQualityClassificationError(error);
   } else {
