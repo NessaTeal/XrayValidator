@@ -48,7 +48,7 @@ function processXrayTypeClassificationResponse(response) {
 }
 
 function processXrayAllTypeClassificationScore(allTypeScore) {
-  if (allTypeScore === null) {
+  if (allTypeScore === undefined) {
     procesUnknownXrayType();
   } else {
     processAllKnownXrayTypeScore(allTypeScore);
@@ -102,11 +102,11 @@ function processXrayQualityClassificationResponse(response) {
   var allImageAllQualityResponse = response['images'];
   var allQualityScore = allImageAllQualityResponse[0]['scores'];
 
- processAllQualityScore(allQualityScore)
+  processAllQualityScore(allQualityScore);
 }
 
 function processAllQualityScore(allQualityScore) {
-  if(allQualityScore === null) {
+  if(allQualityScore === undefined) {
     processLowQualityScore();
   } else {
     processAllHighQualityScore(allQualityScore);
