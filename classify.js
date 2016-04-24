@@ -1,74 +1,128 @@
 var watson = require('watson-developer-cloud');
 var fs = require('fs');
 
-var image = process.argv[2];
+// Initialize the Visual Recognition API
+var visual_recognition = determineVisualRecoginitionApi();
 
-var visual_recognition = watson.visual_recognition({
-  username: '{username}',
-  password: '{password}',
-  version: 'v2-beta',
-  version_date: '2015-12-02'
-});
+function determineVisualRecoginitionApi()
+{
+  var settingsFile = fs.readFileSync('settings.json', 'utf8');
+  var settings = JSON.parse(settingsFile);
+  return watson.visual_recognition(settings);
+}
 
-var params = {
-	images_file: fs.createReadStream(image),
-	classifier_ids: fs.readFileSync('./classifierlist.json')
+// Save the XrayTypeClassifiers
+var xrayTypeClassifiers = ["ChestFront_20730281", "KneeFront_1424148053"];
+
+// Setup the classification parameters
+var allTypeClassificationParameter = {
+	images_file: openImageFileStream(),
+	classifier_ids: xrayTypeClassifiers
 };
 
-visual_recognition.classify(params, 
-	function(err, response) {
-   	 if (err)
-      		console.log(err);
-    	else
-    	{
+function openImageFileStream()
+{
+  var pathToImage = process.argv[2];
+  return fs.createReadStream(pathToImage);
+}
 
-	    	var images = response['images']; 
-	    	var scores = images[0]['scores'];
-	    	
-	    	if(scores != null)
-	    	{	
-		    	var name = scores[0]['name'];
-		    	var score = scores[0]['score'];
-		    	
-		    	console.log("This is " + name + " with probability " + score);
-		    	
-		    	var params2 = {
-		    			images_file: fs.createReadStream(image),
-		    			classifier_ids: ""
-		    	};
-		    	
-		    	if(name == "KneeFront")
-		    	{
-		    		params2.classifier_ids = ["GoodKneeFront_338893760"];
-		    	}
-		    	else if(name == "ChestFront")
-		    	{
-		    		params2.classifier_ids = ["GoodChestFront_1810506107"];
-		    	}
-		    	
-		    	visual_recognition.classify(params2, 
-		    			function(err, response2) {
-		    		   	 if (err)
-		    		      		console.log(err);
-		    		    	else
-		    		    	{
-		    		    		var images2 = response2['images']; 
-		    		        	var scores2 = images2[0]['scores'];
-		    		        	if(scores2 != null)
-		    		        	{
-		    		        		var score2 = scores2[0]['score'];
-		    		    			console.log("This is good image with probability " + score2);
-		    		        	}
-		    		        	else
-		    		        	{
-		    		        		console.log("This is bad image");
-		    		        	}
-		    		    	}
-		    	});
-	    	}
-	    	else
-	    	{
-	    		console.log("This is not knee or lungs.");
-	    	}
-    	}
-});
+visual_recognition.classify(allTypeClassificationParameter, xrayTypeClassificationCallback);
+  
+function xrayTypeClassificationCallback (error, response) {
+	if (error) {
+		processXrayTypeClassificationError(error);
+	} else {
+		processXrayTypeClassificationResponse(response);
+	}
+}
+
+function processXrayTypeClassificationError(error) {
+	console.log(error);
+}
+
+function processXrayTypeClassificationResponse(response) {
+	var allImageAllTypeResponse = response['images'];
+	var allTypeScore = allImageAllTypeResponse[0]['scores'];
+
+	processXrayAllTypeClassificationScore(allTypeScore);
+}
+
+function processXrayAllTypeClassificationScore(allTypeScore) {
+  if (allTypeScore === null) {
+    procesUnknownXrayType();
+  } else {
+    processAllKnownXrayTypeScore(allTypeScore);
+  }
+}
+
+function processAllKnownXrayTypeScore(allTypeScore) {
+  var typeName = allTypeScore[0]['name'];
+  var typeScore = allTypeScore[0]['score'];
+
+  processKnownXrayTypeScore(typeName, typeScore);
+}
+
+function processKnownXrayTypeScore(typeName, typeScore) {
+  console.log("This is " + typeName + " with probability of " + typeScore);
+
+  classifyQualityOfXrayWithKnownTypeName(typeName);
+}
+
+var typeClassifierToAllQualityClassifierIdMap = {
+  "KneeFront": ["GoodKneeFront_338893760"],
+  "ChestFront": ["GoodChestFront_1810506107"]
+};
+
+function classifyQualityOfXrayWithKnownTypeName(typeName) {
+  var allQualityClassifiactionParameter = {
+    images_file: openImageFileStream(),
+    classifier_ids: typeClassifierToAllQualityClassifierIdMap[typeName]
+  };
+
+  cllassifyQualityOfXray(allQualityClassifiactionParameter);
+}
+
+function cllassifyQualityOfXray (parameters) {
+  visual_recognition.classify(parameters, xrayQualityClassifiactionCallback);
+}
+
+function xrayQualityClassifiactionCallback(error, response) {
+  if (error) {
+    processXrayQualityClassificationError(error);
+  } else {
+    processXrayQualityClassificationResponse(response);
+  }
+}
+
+function processXrayQualityClassificationError(error) {
+  console.log(error);
+}
+
+function processXrayQualityClassificationResponse(response) {
+  var allImageAllQualityResponse = response['images'];
+  var allQualityScore = allImageAllQualityResponse[0]['scores'];
+
+ processAllQualityScore(allQualityScore)
+}
+
+function processAllQualityScore(allQualityScore) {
+  if(allQualityScore === null) {
+    processLowQualityScore();
+  } else {
+    processAllHighQualityScore(allQualityScore);
+  }
+}
+
+function processLowQualityScore() {
+  console.log("This is a bad image.")
+}
+
+function processAllHighQualityScore(allQualityScore) {
+  var qualityScore = allQualityScore[0]['score'];
+
+  console.log("This is a good image with probability of " + qualityScore);
+}
+
+function procesUnknownXrayType() {
+  console.log("This is not knee or lungs.");
+}
