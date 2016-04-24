@@ -1,24 +1,23 @@
 var watson = require('watson-developer-cloud');
 var fs = require('fs');
 
-var visualRecognitionApi = determineVisualRecognitionApi();
+var visualRecognitionApi;
 
-// Run the script
 classifyTypeOfXrayImage();
 
-// Define the functions
+function classifyTypeOfXrayImage() {
+  visualRecognitionApi = determineVisualRecognitionApi();
+  var xrayImageTypeClassificationParameter = determineXrayImageTypeClassificationParameter();
+  visualRecognitionApi.classify(xrayImageTypeClassificationParameter, xrayImageTypeClassificationCallback);
+}
+
 function determineVisualRecognitionApi() {
   var settingsFile = fs.readFileSync('settings.json', 'utf8');
   var settings = JSON.parse(settingsFile);
   return watson.visual_recognition(settings);
 }
 
-function classifyTypeOfXrayImage() {
-  var xrayTypeClassificationParameter = determineXrayTypeClassificationParameter();
-  visualRecognitionApi.classify(xrayTypeClassificationParameter, xrayImageTypeClassificationCallback);
-}
-
-function determineXrayTypeClassificationParameter() {
+function determineXrayImageTypeClassificationParameter() {
   var allXrayImageTypeClassifierId = ["ChestFront_20730281", "KneeFront_1424148053"];
 
   return {
@@ -53,40 +52,40 @@ function processXrayTypeClassificationResponse(response) {
 
 function processXrayAllTypeClassificationScore(allTypeScore) {
   if (allTypeScore === undefined) {
-    processUnknownXrayType();
+    processUnknownXrayImageType();
   } else {
-    processAllKnownXrayTypeScore(allTypeScore);
+    processAllKnownXrayImageTypeScore(allTypeScore);
   }
 }
 
-function processUnknownXrayType() {
+function processUnknownXrayImageType() {
   console.log("This is not a knee nor lungs.");
 }
 
-function processAllKnownXrayTypeScore(allTypeScore) {
+function processAllKnownXrayImageTypeScore(allTypeScore) {
   var typeName = allTypeScore[0]['name'];
   var typeScore = allTypeScore[0]['score'];
 
-  processKnownXrayTypeScore(typeName, typeScore);
+  processKnownXrayImageTypeScore(typeName, typeScore);
 }
 
-function processKnownXrayTypeScore(typeName, typeScore) {
+function processKnownXrayImageTypeScore(typeName, typeScore) {
   console.log("This is " + typeName + " with probability of " + typeScore);
 
-  classifyQualityOfXrayWithKnownTypeName(typeName);
+  classifyQualityOfXrayImageWithKnownType(typeName);
 }
 
-function classifyQualityOfXrayWithKnownTypeName(typeName) {
-  var qualityClassificationParameter = buildQualityClassificationParameter(typeName);
-  classifyQualityOfXray(qualityClassificationParameter);
+function classifyQualityOfXrayImageWithKnownType(xrayImageTypeName) {
+  var qualityClassificationParameter = buildQualityClassificationParameter(xrayImageTypeName);
+  classifyQualityOfXrayImage(qualityClassificationParameter);
 }
 
-function buildQualityClassificationParameter(imageTypeName) {
+function buildQualityClassificationParameter(xrayImageTypeName) {
   var typeClassifierToAllQualityClassifierIdMap = determineTypeClassifierToAllQualityClassifierMap();
 
   return {
     images_file: openImageFileStream(),
-    classifier_ids: typeClassifierToAllQualityClassifierIdMap[imageTypeName]
+    classifier_ids: typeClassifierToAllQualityClassifierIdMap[xrayImageTypeName]
   };
 }
 
@@ -97,43 +96,43 @@ function determineTypeClassifierToAllQualityClassifierMap() {
   };
 }
 
-function classifyQualityOfXray (parameters) {
-  visualRecognitionApi.classify(parameters, xrayQualityClassificationCallback);
+function classifyQualityOfXrayImage (parameters) {
+  visualRecognitionApi.classify(parameters, xrayImageQualityClassificationCallback);
 }
 
-function xrayQualityClassificationCallback(error, response) {
+function xrayImageQualityClassificationCallback(error, response) {
   if (error) {
-    processXrayQualityClassificationError(error);
+    processXrayImageQualityClassificationError(error);
   } else {
-    processXrayQualityClassificationResponse(response);
+    processXrayImageQualityClassificationResponse(response);
   }
 }
 
-function processXrayQualityClassificationError(error) {
+function processXrayImageQualityClassificationError(error) {
   console.log(error);
 }
 
-function processXrayQualityClassificationResponse(response) {
-  var allImageAllQualityResponse = response['images'];
-  var allQualityScore = allImageAllQualityResponse[0]['scores'];
+function processXrayImageQualityClassificationResponse(response) {
+  var allXrayImageQualityResponse = response['images'];
+  var allXrayImageQualityScore = allXrayImageQualityResponse[0]['scores'];
 
-  processAllQualityScore(allQualityScore);
+  processAllXrayImageQualityScore(allXrayImageQualityScore);
 }
 
-function processAllQualityScore(allQualityScore) {
-  if(allQualityScore === undefined) {
-    processLowQualityScore();
+function processAllXrayImageQualityScore(allXrayImageQualityScore) {
+  if(allXrayImageQualityScore === undefined) {
+    processLowXrayImageQualityScore();
   } else {
-    processAllHighQualityScore(allQualityScore);
+    processAllHighXrayImageQualityScore(allXrayImageQualityScore);
   }
 }
 
-function processLowQualityScore() {
+function processLowXrayImageQualityScore() {
   console.log("This is a bad image.")
 }
 
-function processAllHighQualityScore(allQualityScore) {
-  var qualityScore = allQualityScore[0]['score'];
+function processAllHighXrayImageQualityScore(allXrayImageQualityScore) {
+  var xrayImageQualityScore = allXrayImageQualityScore[0]['score'];
 
-  console.log("This is a good image with probability of " + qualityScore);
+  console.log("This is a good image with probability of " + xrayImageQualityScore);
 }
