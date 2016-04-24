@@ -2,8 +2,8 @@ var watson = require('watson-developer-cloud');
 var fs = require('fs');
 
 var visual_recognition = watson.visual_recognition({
-  username: '1dca8c73-6e8f-44e2-b6be-c97354e20354',
-  password: 'zLbPquNw7TZ0',
+  username: '{username}',
+  password: '{password}',
   version: 'v2-beta',
   version_date: '2015-12-02'
 });
