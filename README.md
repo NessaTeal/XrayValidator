@@ -12,4 +12,4 @@ Performs the double classification of image and outputs its results to the comma
 
 Usage
 =====
-Run `node classify.js /path/to/image/` to run the Xray image classification dislocated under the `/path/to/image/`.
+Run `node classify.js /path/to/image/` to classify an X-ray image dislocated under the `/path/to/image/`.
