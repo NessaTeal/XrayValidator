@@ -124,5 +124,5 @@ function processAllHighQualityScore(allQualityScore) {
 }
 
 function procesUnknownXrayType() {
-  console.log("This is not knee or lungs.");
+  console.log("This is not a knee nor lungs.");
 }
